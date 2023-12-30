@@ -4,7 +4,7 @@ import './custom.css';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import StickyHeader from './components/header';
 import FeedbackForm from './components/form';
-import Submissions from './components/submissions'
+import Submissions from './components/submissions2'
 
 function App() {
   return (
