@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import Card from 'react-bootstrap/Card';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
-import { InputGroup, Row, Col } from 'react-bootstrap';
+import { InputGroup, Row } from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
+import { Col } from 'react-bootstrap';
 import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
 import Alert from 'react-bootstrap/Alert';
-import Accordion from 'react-bootstrap/Accordion';
 
 function FeedbackForm() {
     const [displayform, setDisplay] = useState(true);
@@ -15,18 +15,25 @@ function FeedbackForm() {
         name: '',
         address: '',
         email: '',
+        identification: '',
+        cardNumber: '', // New field for card number
         phone: '',
-        gender: '',
-        dateOfBirth: '',
-        category: '',
-        subject: '',
-        dateOfOccurrence: '',
-        placeOfOccurrence: '',
-        description: '',
-        missingUpload: null,
     });
 
+    const [checkedValues, setCheckedValues] = useState([]);
     const [errorMsg, setErrorMsg] = useState('Please enter the value for the above field');
+
+    const handleOnChange = (isChecked, value) => {
+        let temp = [...checkedValues];
+        const pre = value.split('_')[0];
+        if (isChecked) {
+            temp = temp.filter(item => item.split('_')[0] !== pre);
+            temp.push(value);
+            setCheckedValues(temp);
+        } else {
+            setCheckedValues(temp.filter(item => item !== value));
+        }
+    };
 
     const validateForm = () => {
         setErrorMsg('Please enter the value for the above field');
@@ -34,7 +41,7 @@ function FeedbackForm() {
             element.style.display = 'none';
         });
 
-        const { name, email, phone, gender, dateOfBirth, category, subject, dateOfOccurrence, placeOfOccurrence, description } = formData;
+        const { name, email, phone, identification, cardNumber } = formData;
 
         if (!name) {
             document.getElementById('name_er').style.display = 'block';
@@ -44,24 +51,23 @@ function FeedbackForm() {
         } else if (!phone || phone.length < 13) {
             document.getElementById('phone_er').style.display = 'block';
             setErrorMsg('Invalid Phone number');
-        } else if (!gender) {
-            document.getElementById('gender_er').style.display = 'block';
-        } else if (!dateOfBirth) {
-            document.getElementById('dob_er').style.display = 'block';
-        } else if (!category) {
-            document.getElementById('category_er').style.display = 'block';
-        } else if (!subject) {
-            document.getElementById('subject_er').style.display = 'block';
-        } else if (!dateOfOccurrence) {
-            document.getElementById('date_occurrence_er').style.display = 'block';
-        } else if (!placeOfOccurrence) {
-            document.getElementById('place_occurrence_er').style.display = 'block';
-        } else if (!description) {
-            document.getElementById('description_er').style.display = 'block';
-        } else if (category === 'PersonMissing' && !formData.missingUpload) {
-            document.getElementById('missing_upload_er').style.display = 'block';
+        } else if (identification === 'passport' && (!/^[a-zA-Z0-9]{12}$/.test(cardNumber))) {
+            document.getElementById('cardNumber_er').style.display = 'block';
+            setErrorMsg('Passport Invalid');
+        } else if (identification === 'aadhar' && (!/^\d{12}$/.test(cardNumber))) {
+            document.getElementById('cardNumber_er').style.display = 'block';
+            setErrorMsg('Invalid Aadhar Number');
+        } else if (identification === 'pancard' && (!/^[a-zA-Z0-9]{10}$/.test(cardNumber))) {
+            document.getElementById('cardNumber_er').style.display = 'block';
+            setErrorMsg('PAN Invalid');
+        }else if (identification === 'driver_license' && (!/^[a-zA-Z0-9\s-]{16}$/.test(cardNumber))) {
+            document.getElementById('cardNumber_er').style.display = 'block';
+            setErrorMsg('Incorrect Driver\'s License ');
         }
 
+        // Rest of the validation logic remains the same
+
+        // Return true only if all validations pass
         return !document.querySelectorAll('.alert-danger[style="display: block;"]').length;
     };
 
@@ -77,21 +83,31 @@ function FeedbackForm() {
                 email: formData.email,
                 name: formData.name,
                 phone: formData.phone,
-                gender: formData.gender,
-                dateOfBirth: formData.dateOfBirth,
-                category: formData.category,
-                address: formData.address,
-                subject: formData.subject,
-                dateOfOccurrence: formData.dateOfOccurrence,
-                placeOfOccurrence: formData.placeOfOccurrence,
-                description: formData.description,
-                missingUpload: formData.missingUpload,
+                checkbox_values: checkedValues,
+                cardNumber: formData.cardNumber, // Include cardNumber in the entry
             };
 
             existingEntries.push(entry);
             localStorage.setItem('allEntries', JSON.stringify(existingEntries));
             setDisplay(false);
         }
+    };
+
+    const feedback_type = {
+        qos: 'Please rate the quality of the service you received from your station',
+        qob: 'Please take a moment to rate the quality of our interactions',
+        roc: 'Did our police department keep you well-informed with updates on the investigation',
+        exp: 'Your satisfaction is our priority. Please take a moment to share your overall experience with us',
+        eyp: 'Please rate the speed and efficiency of the police response to your reported incident. Your input helps us enhance our response times and effectiveness',
+    };
+
+    const feedback_opts = ['Excellent', 'Good', 'Fair', 'Bad'];
+
+    const handleChange = (key, value) => {
+        setFormData(prevState => ({
+            ...prevState,
+            [key]: value,
+        }));
     };
 
     return (
@@ -117,7 +133,7 @@ function FeedbackForm() {
                                             required
                                             placeholder="Full Name"
                                             value={formData.name}
-                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            onChange={e => handleChange('name', e.target.value)}
                                         />
                                         <Alert variant="danger" id="name_er">
                                             &#9432;{errorMsg}
@@ -135,7 +151,7 @@ function FeedbackForm() {
                                             required
                                             placeholder="Address"
                                             value={formData.address}
-                                            onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                            onChange={e => handleChange('address', e.target.value)}
                                         />
                                         <Alert variant="danger" id="address_er">
                                             &#9432;{errorMsg}
@@ -153,9 +169,50 @@ function FeedbackForm() {
                                             required
                                             placeholder="Email"
                                             value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            onChange={e => handleChange('email', e.target.value)}
                                         />
                                         <Alert variant="danger" id="email_er">
+                                            &#9432;{errorMsg}
+                                        </Alert>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formBasicIdentification">
+                                        <Form.Label className="required-field">Identification</Form.Label>
+                                        <Form.Control
+                                            as="select"
+                                            required
+                                            value={formData.identification}
+                                            onChange={e => handleChange('identification', e.target.value)}
+                                        >
+                                            <option value="">Select</option>
+                                            <option value="passport">Passport</option>
+                                            <option value="driver_license">Driver's License</option>
+                                            <option value="aadhar">Aadhar</option> {/* Add Aadhar option */}
+                                            <option value="pancard">PAN Card</option> {/* Add PAN Card option */}
+                                            {/* Add other identification options as needed */}
+                                        </Form.Control>
+                                        <Alert variant="danger" id="Identification_er">
+                                            &#9432;{errorMsg}
+                                        </Alert>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formBasicCardNumber">
+                                        <Form.Label className="required-field">Card Number</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Card Number"
+                                            value={formData.cardNumber}
+                                            onChange={e => handleChange('cardNumber', e.target.value)}
+                                        />
+                                        <Alert variant="danger" id="cardNumber_er">
                                             &#9432;{errorMsg}
                                         </Alert>
                                     </Form.Group>
@@ -170,7 +227,7 @@ function FeedbackForm() {
                                             <PhoneInput
                                                 placeholder="Phone Number"
                                                 value={formData.phone}
-                                                onChange={value => setFormData({ ...formData, phone: value })}
+                                                onChange={value => handleChange('phone', value)}
                                             />
                                         </InputGroup>
                                         <Alert variant="danger" id="phone_er">
@@ -181,184 +238,36 @@ function FeedbackForm() {
                                 <Col></Col>
                             </Row>
 
-                            <Row>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicGender">
-                                        <Form.Label className="required-field">Gender</Form.Label>
-                                        <Form.Control
-                                            as="select"
-                                            required
-                                            value={formData.gender}
-                                            onChange={e => setFormData({ ...formData, gender: e.target.value })}
-                                        >
-                                            <option value="">Select Gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </Form.Control>
-                                        <Alert variant="danger" id="gender_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicDateOfBirth">
-                                        <Form.Label className="required-field">Date of Birth</Form.Label>
-                                        <Form.Control
-                                            type="date"
-                                            required
-                                            value={formData.dateOfBirth}
-                                            onChange={e => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                                        />
-                                        <Alert variant="danger" id="dob_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Row>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicCategory">
-                                        <Form.Label className="required-field">Category</Form.Label>
-                                        <Form.Control
-                                            as="select"
-                                            required
-                                            value={formData.category}
-                                            onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                        >
-                                            <option value="">Select Category</option>
-                                            <option value="PersonMissing">Person Missing</option>
-                                            <option value="VehicleMissingTheft">Vehicle Missing / Theft</option>
-                                            <option value="CellPhoneMissingTheft">Cell Phone Missing / Theft</option>
-                                            <option value="JewelSnatchingTheft">Jewel Snatching / Theft</option>
-                                            <option value="BagLiftingTheft">Bag Lifting / Theft</option>
-                                            <option value="OtherTheft">Other Theft</option>
-                                            <option value="ReceivingStolenProperty">Receiving Stolen Property</option>
-                                            <option value="DocumentMissing">Document Missing</option>
-                                            <option value="CheatingEmbezzlementLandGrabbing">Cheating / Embezzlement / Land Grabbing</option>
-                                            <option value="CounterfeitNotesCoins">Making Counterfeit Notes / Coins</option>
-                                            <option value="Murder">Murder</option>
-                                            <option value="KidnappingWrongfulConfinement">Kidnapping / Wrongful Confinement</option>
-                                            <option value="Hurt">Hurt</option>
-                                            <option value="DamagingProperty">Damaging Property</option>
-                                            <option value="WordyQuerrelThreatening">Wordy Querrel / Threatening</option>
-                                            <option value="Extortion">Extortion</option>
-                                            <option value="PublicNuisance">Public Nuisance</option>
-                                            <option value="EveTeasing">Eve Teasing</option>
-                                            <option value="OffenceRelatedToMarriage">Offence Related To Marriage</option>
-                                            {/* ... (other options remain unchanged) */}
-                                        </Form.Control>
-                                        <Alert variant="danger" id="category_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Row>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicSubject">
-                                        <Form.Label className="required-field">Subject</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            required
-                                            placeholder="Subject"
-                                            value={formData.subject}
-                                            onChange={e => setFormData({ ...formData, subject: e.target.value })}
-                                        />
-                                        <Alert variant="danger" id="subject_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Row>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicDateOfOccurrence">
-                                        <Form.Label className="required-field">Date of Occurrence</Form.Label>
-                                        <Form.Control
-                                            type="date"
-                                            required
-                                            value={formData.dateOfOccurrence}
-                                            onChange={e => setFormData({ ...formData, dateOfOccurrence: e.target.value })}
-                                        />
-                                        <Alert variant="danger" id="date_occurrence_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Row>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicPlaceOfOccurrence">
-                                        <Form.Label className="required-field">Place of Occurrence</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            required
-                                            placeholder="Place of Occurrence"
-                                            value={formData.placeOfOccurrence}
-                                            onChange={e => setFormData({ ...formData, placeOfOccurrence: e.target.value })}
-                                        />
-                                        <Alert variant="danger" id="place_occurrence_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Row>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicDescription">
-                                        <Form.Label className="required-field">Description</Form.Label>
-                                        <Accordion>
-                                            <Accordion.Item eventKey="0">
-                                                <Accordion.Header>Click to expand</Accordion.Header>
-                                                <Accordion.Body>
-                                                    <Form.Control
-                                                        as="textarea"
-                                                        required
-                                                        placeholder="Description"
-                                                        value={formData.description}
-                                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                                    />
-                                                </Accordion.Body>
-                                            </Accordion.Item>
-                                        </Accordion>
-                                        <Alert variant="danger" id="description_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Row>
-                                <Col>
-                                    <Form.Group className="mb-3" controlId="formBasicMissingUpload">
-                                        <Form.Label className="required-field">Missing Person/Object Upload</Form.Label>
-                                        <Form.Control
-                                            type="file"
-                                            accept=".png, .jpg, .jpeg"
-                                            onChange={e => setFormData({ ...formData, missingUpload: e.target.files[0] })}
-                                            disabled={formData.category !== 'PersonMissing'&&
-                                                      formData.category !== 'VehicleMissingTheft'&&
-                                                      formData.category !== 'CellPhoneMissingTheft'&&
-                                                      formData.category !== 'JewelSnatchingTheft'&&
-                                                      formData.category !== 'BagLiftingTheft'&&
-                                                      formData.category !== 'KidnappingWrongfulConfinement'&&
-                                                      formData.category !== 'CheatingEmbezzlementLandGrabbing'&&
-                                                      formData.category !== 'DamagingProperty'
-                                                    }
-                                        />
-                                        <Alert variant="danger" id="missing_upload_er">
-                                            &#9432;{errorMsg}
-                                        </Alert>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
+                            <Container>
+                                {Object.keys(feedback_type).map(ty => (
+                                    <Row key={ty}>
+                                        <Col>
+                                            <Form.Group className="mb-3" controlId={ty}>
+                                                <Form.Label className="required-field">{feedback_type[ty]}</Form.Label>
+                                                <InputGroup>
+                                                    <div className="mb-3">
+                                                        {feedback_opts.map((opt, key) => (
+                                                            <Form.Check
+                                                                inline
+                                                                label={opt}
+                                                                name={`${ty}_feedback_opts`}
+                                                                id={`${ty}_${key}`}
+                                                                checked={checkedValues.includes(ty + '_' + opt)}
+                                                                onChange={e => handleOnChange(e.target.checked, ty + '_' + opt)}
+                                                                type="checkbox"
+                                                                value={opt}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </InputGroup>
+                                                <Alert variant="danger" id={`er_${ty}`}>
+                                                    &#9432;{errorMsg}
+                                                </Alert>
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+                                ))}
+                            </Container>
                             <Button className="btn_purp" onClick={e => formSubmit(e)}>
                                 Submit Review
                             </Button>
